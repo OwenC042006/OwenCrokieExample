@@ -1,0 +1,112 @@
+local DataStoreService = game:GetService("DataStoreService")
+
+local PlayerStore = DataStoreService:GetDataStore("PlayerData")
+local ServerStorage = game:GetService("ServerStorage")
+
+local DefaultStorage = require(ServerStorage.Storage.DataStorage)
+
+
+local DataManager = {}
+
+local Profiles = {}
+
+
+local function DeepCopy(Table)
+
+	local Copy = {}
+
+	for Index, Value in pairs(Table) do
+
+		if typeof(Value) == "table" then
+			Copy[Index] = DeepCopy(Value)
+		else
+			Copy[Index] = Value
+		end
+
+	end
+
+	return Copy
+
+end
+
+
+
+function DataManager:Load(player)
+
+	local Success, Data = pcall(function()
+
+		return PlayerStore:GetAsync(player.UserId)
+
+	end)
+
+
+	if Success then
+
+		if Data then
+
+			Profiles[player] = Data
+
+		else
+
+			Profiles[player] = DeepCopy(DefaultStorage)
+
+		end
+
+
+	else
+
+		warn("Failed loading data:", player.Name)
+
+	end
+
+
+	return Profiles[player]
+
+end
+
+
+
+function DataManager:Get(player)
+
+	return Profiles[player]
+
+end
+
+
+
+function DataManager:Save(player)
+
+	local Data = Profiles[player]
+
+	if not Data then return end
+
+
+	local Success, ErrorMessage = pcall(function()
+
+		PlayerStore:SetAsync(
+			player.UserId,
+			Data
+		)
+
+	end)
+
+
+	if not Success then
+
+		warn(ErrorMessage)
+
+	end
+
+end
+
+
+
+function DataManager:Remove(player)
+
+	Profiles[player] = nil
+
+end
+
+
+
+return DataManager
